@@ -104,32 +104,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-# if not os.path.isfile(local_file):
-#     torch.hub.download_url_to_file('https://models.silero.ai/models/tts/ua/v4_ua.pt',
-
-# import os
-# import torch
-# import sounddevice as sd
-
-# language = 'ua'
-# model_id = 'v4_ua'
-# sample_rate = 48000
-# speaker = 'mykyta'
-# device = torch.device('cpu')
-
-# model, example_text = torch.hub.load(repo_or_dir='snakers4/silero-models',
-#                                      model='silero_tts',
-#                                      language=language,
-#                                      speaker=model_id)
-# model.to(device)  # gpu or cpu
-
-# audio = model.apply_tts(text=example_text,
-#                         speaker=speaker,
-#                         sample_rate=sample_rate)
-# sd.play(audio, sample_rate)
-# sd.wait()
