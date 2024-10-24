@@ -3,6 +3,7 @@
 /speech_orig.wav
 /vosk-model-en-us-0.22-lgraph
 /vosk-model-uk-v3-lgraph
+/model-en-us
 /__pycache__
 *.wav
 *.mp4
