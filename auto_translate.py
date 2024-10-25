@@ -80,6 +80,8 @@ class AutoTranslate:
                 for chunk in self.final]
         df = pd.DataFrame(chunks_data)
 
+        self.prev_end_time = None
+
         self.alt = [None] * len(df)
 
         def generate_audio(row):
@@ -88,25 +90,38 @@ class AutoTranslate:
                 speaker=self.speaker,
                 sample_rate=self.sample_rate
             )
-            return {'start_time': row['start_time'], 'end_time': row['end_time'], 'audio': audio}
+
+            num_samples = audio.shape[0]
+            duration_seconds = num_samples / self.sample_rate
+
+            start_time = row['start_time']
+            end_time = row['end_time']
+
+            if self.prev_end_time is not None and self.prev_end_time > start_time:
+                start_time = self.prev_end_time
+
+            if (end_time - start_time) < duration_seconds:
+                difference = duration_seconds - (end_time - start_time)
+                end_time = end_time + difference
+
+            self.prev_end_time = end_time
+
+            return {'start_time': start_time, 'end_time': end_time, 'audio': audio}
 
         self.alt = df.apply(generate_audio, axis=1).tolist()
-        
+
     def fragments_orig(self):
         chunks_data = []
         waveform, sample_rate = torchaudio.load("audio.wav")
 
-        for i, chunk in enumerate(self.final):
-            start_time = chunk['timestamp'][1]
+        for i, chunk in enumerate(self.alt):
+            start_time = chunk['end_time']
+
+            if i == 0 and chunk['start_time'] > 0:
+                chunks_data.append({'start_time': 0, 'end_time': self.alt[i]['start_time']})
             
-            if i == 0 and chunk['timestamp'][0] != 0:
-                start_time = 0
-                end_time = self.final[i]['timestamp'][0]
-                
-                continue
-            
-            if i + 1 < len(self.final):
-                end_time = self.final[i + 1]['timestamp'][0]
+            if i + 1 < len(self.alt):
+                end_time = self.alt[i + 1]['start_time'] 
             else:
                 num_samples = waveform.size(1)
                 end_time = num_samples / sample_rate
@@ -168,13 +183,9 @@ class AutoTranslate:
 
 if __name__ == "__main__":
     # auto = AutoTranslate('https://www.youtube.com/shorts/Gno-zBED01Y')
-    # auto = AutoTranslate('https://www.youtube.com/watch?v=PTAI7NXHX0I')
-    auto = AutoTranslate('https://www.youtube.com/watch?v=owePZqppYWM')
+    auto = AutoTranslate('https://www.youtube.com/watch?v=PTAI7NXHX0I')
+    # auto = AutoTranslate('https://www.youtube.com/watch?v=owePZqppYWM')
     print('Complite!')
-
-"""
-
-"""
 
 
 # winget install ffmpeg
