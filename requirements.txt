@@ -6,3 +6,4 @@ sounddevice
 git+https://github.com/openai/whisper.git
 deep_translator
 PySoundFile
+validators
