@@ -37,6 +37,8 @@ class AutoTranslate:
         
         self.model = whisper.load_model('base')
         
+        self.__callback('Deleting old files')
+        
         self.file_check()
         self.download_video()
         self.separate_audio()
@@ -53,18 +55,17 @@ class AutoTranslate:
             self._callback({
                     'progress': self.progress,
                     'line_width': self.line_width,
-                    'description': description
+                    'next_description': description
                 })
         elif self._callback:
             self._callback({
                     'progress': self.progress,
                     'line_width': self.line_width,
-                    'description': description
+                    'next_description': description
                 })
     
     def file_check(self):
-        description = 'Deleting old files'
-        self.__callback(description)
+        description = 'Download video'
 
         if not os.path.exists(self.folder_path):
             os.makedirs(self.folder_path)
@@ -79,8 +80,7 @@ class AutoTranslate:
         self.__callback(description, True)
 
     def download_video(self):
-        description = 'Download video'
-        self.__callback(description)
+        description = 'Separating audio'
         
         ydl_opts = {
             'format': 'best',
@@ -93,8 +93,7 @@ class AutoTranslate:
         self.__callback(description, True)
     
     def separate_audio(self):
-        description = 'Separating audio'
-        self.__callback(description)
+        description = 'Word recognition'
         
         self.output_video_path = os.path.join(self.folder_path, 'video.mp4')
         self.video = VideoFileClip(str(self.output_video_path))
@@ -108,8 +107,7 @@ class AutoTranslate:
     
 
     def recognize_audio(self):
-        description = 'Word recognition'
-        self.__callback(description)
+        description = 'Voicing of fragments'
         
         result = self.model.transcribe(self.output_audio_path, word_timestamps=True)
 
@@ -118,7 +116,7 @@ class AutoTranslate:
         
         for segment in result['segments']:
             start = segment['start']
-            end = segment['end'] + 0.1
+            end = segment['end']
             text = segment['text']
             translated = GoogleTranslator(source='auto', target='uk').translate(text)
             self.final.append({'timestamp': (float(f'{start:.2f}'), float(f'{end:.2f}')), 'text': translated})
@@ -127,7 +125,6 @@ class AutoTranslate:
     
     def audize(self):
         description = 'Voicing of fragments'
-        self.__callback(description)
         
         chunks_data = [{'start_time': chunk['timestamp'][0], 'end_time': chunk['timestamp'][1], 'text': chunk['text']}\
                 for chunk in self.final]
@@ -161,15 +158,14 @@ class AutoTranslate:
             
             self.__callback(description, True)
 
-            return {'start_time': start_time, 'end_time': end_time, 'audio': audio}
+            return {'start_time': start_time, 'end_time': end_time + 0.5, 'audio': audio}
 
         self.alt = df.apply(generate_audio, axis=1).tolist()
 
-        self.__callback(description, True)
+        self.__callback('Fragments without words', True)
 
     def fragments_orig(self):
-        description = 'Fragments without words'
-        self.__callback(description)
+        description = 'Mixing audio and video'
         
         chunks_data = []
         waveform, sample_rate = torchaudio.load(self.output_audio_path)
@@ -205,8 +201,7 @@ class AutoTranslate:
         self.__callback(description, True)
 
     def mix_audio(self):
-        description = 'Mixing audio and video'
-        self.__callback(description)
+        description = 'Complite'
         
         df1 = pd.DataFrame(self.alt)
         df2 = pd.DataFrame(self.chunks)
@@ -214,7 +209,9 @@ class AutoTranslate:
         df = pd.concat([df1, df2], ignore_index=True)
         df = df.sort_values(by=['start_time', 'end_time']).reset_index(drop=True)
 
-        df['end_time'] = df['start_time'] + df['audio'].apply(lambda x: len(x) / self.sample_rate)
+        # df['end_time'] = df['start_time'] + df['audio'].apply(lambda x: len(x) / self.sample_rate)
+        
+        print(df)
 
         total_duration = df['end_time'].max()
         total_samples = int(total_duration * self.sample_rate)
@@ -245,7 +242,7 @@ class AutoTranslate:
     
 
 if __name__ == '__main__':
-    auto = AutoTranslate('https://www.youtube.com/shorts/Gno-zBED01Y')
+    auto = AutoTranslate('https://www.youtube.com/shorts/43Dlqi7SJq4')
     # auto = AutoTranslate('https://www.youtube.com/watch?v=PTAI7NXHX0I')
     # auto = AutoTranslate('https://www.youtube.com/watch?v=owePZqppYWM')
     print('Complite!')

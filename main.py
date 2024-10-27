@@ -5,7 +5,6 @@ from auto_translate import AutoTranslate
 
 import os
 
-# font_yokai_path = os.path.join("assets", "Yokai.otf")
 
 def main(page: ft.Page):
     def progress_callback(e):
@@ -13,22 +12,34 @@ def main(page: ft.Page):
         
         if e['progress'] / e['line_width'] == 1:
             page.close(progress_dlg)
+        
+        progress_label.value = e['next_description']
 
         page.update()
 
     def submit(e):
+        progress_ring.value = 0
+        progress_label.value = 'Starting...'
         url_text = url_field.value
 
         if url(url_text):
             page.open(progress_dlg)
             auto = AutoTranslate(url_text, _callback=progress_callback)
+
+            if video.visible == False:
+                video.visible = True
         else:
             page.open(not_url)
+        
+        video.next()
+        url_field.value = ''
+        
+        page.update()
             
         
     page.theme_mode = ft.ThemeMode.DARK
     page.title = "Auto Transtate"
-    page.window.always_on_top = True
+    page.window.icon = os.path.abspath(os.path.join('assets', 'favicon.ico'))
     page.spacing = 20
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
     page.theme = ft.Theme(color_scheme_seed='indigo')
@@ -39,6 +50,26 @@ def main(page: ft.Page):
     
     url_field = ft.TextField(label="YouTube URL", hint_text="Please enter URL here")
     submit_but = ft.ElevatedButton("Submit", on_click=submit)
+    
+    output_video = [
+                    ft.VideoMedia(
+                        "assets/output_video.mp4"
+                    ),
+                    ft.VideoMedia(
+                        "assets/output_video.mp4"
+                    ),
+                ]
+    video = ft.Video(
+                expand=True,
+                playlist=output_video,
+                playlist_mode=ft.PlaylistMode.LOOP,
+                aspect_ratio=16/9,
+                volume=100,
+                autoplay=False,
+                filter_quality=ft.FilterQuality.HIGH,
+                muted=False,
+                visible=True if os.path.exists(os.path.join('assets', 'output_video.mp4')) else False,
+            )
 
     not_url = ft.CupertinoAlertDialog(
         title=ft.Text("URL is incorrect!"),
@@ -47,11 +78,19 @@ def main(page: ft.Page):
         ],
     )
     
-    progress_ring = ft.ProgressRing(semantics_label = 'zxc')
+    progress_ring = ft.ProgressRing()
+    progress_label = ft.Text('Starting...')
     progress_dlg = ft.CupertinoAlertDialog(
         modal=True,
         content=ft.Container(
-            content=progress_ring,
+            content=ft.Column(
+                        [
+                            progress_ring,
+                            progress_label,
+                        ],
+                        alignment=ft.MainAxisAlignment.CENTER,
+                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                    ),
             width=150,
             height=150,
             padding=50,
@@ -65,6 +104,7 @@ def main(page: ft.Page):
                 ft.Column(
                     [
                         ft.Text("Auto Transtate", font_family="Yokai", size=50),
+                        video,
                         url_field,
                         submit_but
                     ],
