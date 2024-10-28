@@ -1,27 +1,38 @@
+"""
+This module handles automatic detection of text in videos, translation
+into another language, and audio generation for the translation.
+"""
+
+import os
+
 import yt_dlp
 from moviepy.editor import VideoFileClip, AudioFileClip
 
 import torch
 import pandas as pd
 import torchaudio
-import sounddevice as sd
+# import sounddevice as sd
 
 import whisper
 
 from deep_translator import GoogleTranslator
 
-import os
-
 
 class AutoTranslate:
+    """
+    Class to handle the detection of text in videos, translating
+    the detected text into another language, and generating speech
+    for the translated text.
+    """
     def __init__(self, url: str, _callback=None):
         self.url = url
         self._callback = _callback
-        
+
         self.folder_path = 'assets'
         self.progress = 0
         self.line_width = 7
-    
+        self.prev_end_time = None
+
         self.language = 'ua'      # ua en
         self.model_id = 'v4_ua'   # v4_ua v3_en
         self.sample_rate = 48000  # 8000, 24000, 48000
@@ -34,22 +45,27 @@ class AutoTranslate:
                                     speaker=self.model_id)
 
         self.model_silero.to(self.device)
-        
+
         self.model = whisper.load_model('base')
-        
+
         self.__callback('Deleting old files')
-        
+
         self.file_check()
         self.download_video()
         self.separate_audio()
 
         self.recognize_audio()
         self.audize()
-        
+
         self.fragments_orig()
         self.mix_audio()
-    
+
     def __callback(self, description: str, plus: bool=False):
+        """
+        Args:
+            description (str): _description_
+            plus (bool, optional): Will one be added to progress. _description_. Defaults to False.
+        """
         if self._callback and plus:
             self.progress += 1
             self._callback({
@@ -63,8 +79,11 @@ class AutoTranslate:
                     'line_width': self.line_width,
                     'next_description': description
                 })
-    
+
     def file_check(self):
+        """
+        Checks for old files and deletes them
+        """
         description = 'Download video'
 
         if not os.path.exists(self.folder_path):
@@ -76,12 +95,15 @@ class AutoTranslate:
             file_path = os.path.join(self.folder_path, file)
             if os.path.exists(file_path):
                 os.remove(file_path)
-        
+
         self.__callback(description, True)
 
     def download_video(self):
+        """
+        Video is loading. So far only from YouTube
+        """
         description = 'Separating audio'
-        
+
         ydl_opts = {
             'format': 'best',
             'outtmpl': os.path.join(self.folder_path, 'video.%(ext)s')  # Save file as <title>.<ext>
@@ -91,10 +113,13 @@ class AutoTranslate:
             ydl.download([self.url])
 
         self.__callback(description, True)
-    
+
     def separate_audio(self):
+        """
+        Audio and video department
+        """
         description = 'Word recognition'
-        
+
         self.output_video_path = os.path.join(self.folder_path, 'video.mp4')
         self.video = VideoFileClip(str(self.output_video_path))
 
@@ -102,35 +127,41 @@ class AutoTranslate:
 
         self.output_audio_path = os.path.join(self.folder_path, 'audio.wav')
         audio.write_audiofile(self.output_audio_path)
-        
+
         self.__callback(description, True)
-    
+
 
     def recognize_audio(self):
+        """
+        Word recognition in audio
+        """
         description = 'Voicing of fragments'
-        
+
         result = self.model.transcribe(self.output_audio_path, word_timestamps=True)
 
         self.final = []
         self.line_width += len(result['segments'])
-        
+
         for segment in result['segments']:
             start = segment['start']
             end = segment['end']
             text = segment['text']
             translated = GoogleTranslator(source='auto', target='uk').translate(text)
-            self.final.append({'timestamp': (float(f'{start:.2f}'), float(f'{end:.2f}')), 'text': translated})
-        
-        self.__callback(description, True)
-    
-    def audize(self):
-        description = 'Voicing of fragments'
-        
-        chunks_data = [{'start_time': chunk['timestamp'][0], 'end_time': chunk['timestamp'][1], 'text': chunk['text']}\
-                for chunk in self.final]
-        df = pd.DataFrame(chunks_data)
+            self.final.append({'timestamp': (float(f'{start:.2f}'), float(f'{end:.2f}')),
+                               'text': translated})
 
-        self.prev_end_time = None
+        self.__callback(description, True)
+
+    def audize(self):
+        """
+        Voicing of translated fragments
+        """
+        description = 'Voicing of fragments'
+
+        chunks_data = [{'start_time': chunk['timestamp'][0],
+                        'end_time': chunk['timestamp'][1],
+                        'text': chunk['text']} for chunk in self.final]
+        df = pd.DataFrame(chunks_data)
 
         self.alt = [None] * len(df)
 
@@ -155,7 +186,7 @@ class AutoTranslate:
                 end_time = end_time + difference
 
             self.prev_end_time = end_time
-            
+
             self.__callback(description, True)
 
             return {'start_time': start_time, 'end_time': end_time + 0.5, 'audio': audio}
@@ -165,8 +196,11 @@ class AutoTranslate:
         self.__callback('Fragments without words', True)
 
     def fragments_orig(self):
+        """
+        We get elements where there were no words
+        """
         description = 'Mixing audio and video'
-        
+
         chunks_data = []
         waveform, sample_rate = torchaudio.load(self.output_audio_path)
 
@@ -175,42 +209,47 @@ class AutoTranslate:
 
             if i == 0 and chunk['start_time'] > 0:
                 chunks_data.append({'start_time': 0, 'end_time': self.alt[i]['start_time']})
-            
+
             if i + 1 < len(self.alt):
-                end_time = self.alt[i + 1]['start_time'] 
+                end_time = self.alt[i + 1]['start_time']
             else:
                 num_samples = waveform.size(1)
                 end_time = num_samples / sample_rate
-            
+
             chunks_data.append({'start_time': start_time, 'end_time': end_time})
 
         df = pd.DataFrame(chunks_data)
-        
+
         self.chunks = [None] * len(df)
-        
+
         def get_samples(row):
             start_sample = int(row['start_time'] * sample_rate)
             end_sample = int(row['end_time'] * sample_rate)
 
             chunk_waveform = waveform[:, start_sample:end_sample].flatten()
-            
-            return {'start_time': row['start_time'], 'end_time': row['end_time'], 'audio': chunk_waveform}
-            
+
+            return {'start_time': row['start_time'],
+                    'end_time': row['end_time'],
+                    'audio': chunk_waveform}
+
         self.chunks = df.apply(get_samples, axis=1).tolist()
 
         self.__callback(description, True)
 
     def mix_audio(self):
+        """
+        We mix the original audio and video
+        """
         description = 'Complite'
-        
+
         df1 = pd.DataFrame(self.alt)
         df2 = pd.DataFrame(self.chunks)
-        
+
         df = pd.concat([df1, df2], ignore_index=True)
         df = df.sort_values(by=['start_time', 'end_time']).reset_index(drop=True)
 
         # df['end_time'] = df['start_time'] + df['audio'].apply(lambda x: len(x) / self.sample_rate)
-        
+
         print(df)
 
         total_duration = df['end_time'].max()
@@ -232,14 +271,14 @@ class AutoTranslate:
         torchaudio.save(self.output_audio_path, combined_audio.unsqueeze(0), self.sample_rate)
 
         audio = AudioFileClip(self.output_audio_path)
-        
+
         video_path = os.path.join(self.folder_path, 'output_video.mp4')
-        
+
         video_with_audio = self.video.set_audio(audio)
         video_with_audio.write_videofile(video_path, codec='libx264', audio_codec='aac')
 
         self.__callback(description, True)
-    
+
 
 if __name__ == '__main__':
     auto = AutoTranslate('https://www.youtube.com/shorts/43Dlqi7SJq4')
