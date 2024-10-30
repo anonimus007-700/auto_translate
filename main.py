@@ -6,6 +6,14 @@ from auto_translate import AutoTranslate
 import os
 
 
+language_list = {
+    "Ukrain": 'uk',
+    "English": 'en',
+    "German": 'de',
+    "French": 'fr'
+}
+
+
 def main(page: ft.Page):
     def progress_callback(e):
         progress_ring.value = e['progress'] / e['line_width']
@@ -24,9 +32,10 @@ def main(page: ft.Page):
 
         if url(url_text):
             page.open(progress_dlg)
-            auto = AutoTranslate(url_text, _callback=progress_callback)
+            s_lang = select_language.value
+            AutoTranslate(url_text, to_language=language_list[s_lang], _callback=progress_callback)
 
-            if video.visible == False:
+            if not video.visible:
                 video.visible = True
         else:
             page.open(not_url)
@@ -78,6 +87,19 @@ def main(page: ft.Page):
         ],
     )
     
+    select_language = ft.Dropdown(
+            label="language",
+            hint_text="Choose language to translate into",
+            options=[
+                ft.dropdown.Option("Ukrain"),
+                ft.dropdown.Option("English"),
+                ft.dropdown.Option("German"),
+                ft.dropdown.Option("French"),
+            ],
+            autofocus=True,
+        )
+    select_language.value = "Ukrain"
+
     progress_ring = ft.ProgressRing()
     progress_label = ft.Text('Starting...')
     progress_dlg = ft.CupertinoAlertDialog(
@@ -105,7 +127,7 @@ def main(page: ft.Page):
                     [
                         ft.Text("Auto Transtate", font_family="Yokai", size=50),
                         video,
-                        url_field,
+                        ft.Row([url_field, select_language]),
                         submit_but
                     ],
                     alignment=ft.MainAxisAlignment.CENTER,

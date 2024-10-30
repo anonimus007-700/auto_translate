@@ -4,6 +4,7 @@ into another language, and audio generation for the translation.
 """
 
 import os
+from typing import Literal
 
 import yt_dlp
 from moviepy.editor import VideoFileClip, AudioFileClip
@@ -11,7 +12,6 @@ from moviepy.editor import VideoFileClip, AudioFileClip
 import torch
 import pandas as pd
 import torchaudio
-# import sounddevice as sd
 
 import whisper
 
@@ -23,9 +23,15 @@ class AutoTranslate:
     Class to handle the detection of text in videos, translating
     the detected text into another language, and generating speech
     for the translated text.
+    
+    Args:
+        url (str): URL to YouTube video
+        to_language (Literal['uk', 'en', 'fr', 'de']): language to translate into
+        _callback (callback function, optional): a function that will return progress
     """
-    def __init__(self, url: str, _callback=None):
+    def __init__(self, url: str, to_language: Literal['uk', 'en', 'fr', 'de'], _callback=None):
         self.url = url
+        self.to_language = to_language
         self._callback = _callback
 
         self.folder_path = 'assets'
@@ -33,10 +39,22 @@ class AutoTranslate:
         self.line_width = 7
         self.prev_end_time = None
 
-        self.language = 'ua'      # ua en
-        self.model_id = 'v4_ua'   # v4_ua v3_en
+        models = {
+            'uk': 'v4_ua',
+            'en': 'v3_en',
+            'fr': 'v3_fr',
+            'de': 'v3_de'
+        }
+        spekers = {
+            'uk': 'mykyta',
+            'en': 'en_0',
+            'fr': 'fr_2',
+            'de': 'karlsson'
+        }
+        self.language = 'ua' if self.to_language == 'uk' else self.to_language
+        self.model_id = models[self.to_language]
         self.sample_rate = 48000  # 8000, 24000, 48000
-        self.speaker = 'mykyta'   # mykyta en_0
+        self.speaker = spekers[self.to_language]
         self.device = torch.device('cpu')
 
         self.model_silero, _ = torch.hub.load(repo_or_dir='snakers4/silero-models',
@@ -146,7 +164,7 @@ class AutoTranslate:
             start = segment['start']
             end = segment['end']
             text = segment['text']
-            translated = GoogleTranslator(source='auto', target='uk').translate(text)
+            translated = GoogleTranslator(source='auto', target=self.to_language).translate(text)
             self.final.append({'timestamp': (float(f'{start:.2f}'), float(f'{end:.2f}')),
                                'text': translated})
 
@@ -189,7 +207,7 @@ class AutoTranslate:
 
             self.__callback(description, True)
 
-            return {'start_time': start_time, 'end_time': end_time + 0.5, 'audio': audio}
+            return {'start_time': start_time, 'end_time': end_time + 0.7, 'audio': audio}
 
         self.alt = df.apply(generate_audio, axis=1).tolist()
 
@@ -247,8 +265,8 @@ class AutoTranslate:
 
         df = pd.concat([df1, df2], ignore_index=True)
         df = df.sort_values(by=['start_time', 'end_time']).reset_index(drop=True)
-
-        # df['end_time'] = df['start_time'] + df['audio'].apply(lambda x: len(x) / self.sample_rate)
+        
+        df = df[df['audio'].apply(lambda x: len(x) > 0)]
 
         print(df)
 
@@ -281,9 +299,10 @@ class AutoTranslate:
 
 
 if __name__ == '__main__':
-    auto = AutoTranslate('https://www.youtube.com/shorts/43Dlqi7SJq4')
+    auto = AutoTranslate('https://www.youtube.com/shorts/rIweLp5SjKI', to_language='uk')  # https://www.youtube.com/shorts/43Dlqi7SJq4
     # auto = AutoTranslate('https://www.youtube.com/watch?v=PTAI7NXHX0I')
     # auto = AutoTranslate('https://www.youtube.com/watch?v=owePZqppYWM')
+
     print('Complite!')
 
 

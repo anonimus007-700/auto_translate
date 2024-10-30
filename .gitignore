@@ -3,5 +3,6 @@
 /vosk-model-uk-v3-lgraph
 /model-en-us
 /__pycache__
+/.ruff_cache
 *.wav
 *.mp4
