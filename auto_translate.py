@@ -165,7 +165,8 @@ class AutoTranslate:
             end = segment['end']
             text = segment['text']
             translated = GoogleTranslator(source='auto', target=self.to_language).translate(text)
-            self.final.append({'timestamp': (float(f'{start:.2f}'), float(f'{end:.2f}')),
+            if translated != '':
+                self.final.append({'timestamp': (float(f'{start:.2f}'), float(f'{end:.2f}')),
                                'text': translated})
 
         self.__callback(description, True)

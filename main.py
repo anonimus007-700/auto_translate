@@ -1,47 +1,61 @@
+import os
+
 import flet as ft
 
 from validators import url
+from deep_translator import GoogleTranslator
+
 from auto_translate import AutoTranslate
+from change_language import language_list, translations
 
-import os
 
-
-language_list = {
-    "Ukrain": 'uk',
-    "English": 'en',
-    "German": 'de',
-    "French": 'fr'
-}
+start_language = 'en'
 
 
 def main(page: ft.Page):
-    def progress_callback(e):
+    def _callback(e):
         progress_ring.value = e['progress'] / e['line_width']
         
         if e['progress'] / e['line_width'] == 1:
             page.close(progress_dlg)
         
-        progress_label.value = e['next_description']
+        progress_label.value = GoogleTranslator(source='en',
+                                                target=language_list[program_language.value]
+                                ).translate(e['next_description'])
 
         page.update()
 
     def submit(e):
         progress_ring.value = 0
-        progress_label.value = 'Starting...'
+        progress_label.value = translations[language_list[program_language.value]]['progress_label']
         url_text = url_field.value
 
         if url(url_text):
             page.open(progress_dlg)
             s_lang = select_language.value
-            AutoTranslate(url_text, to_language=language_list[s_lang], _callback=progress_callback)
+            AutoTranslate(url_text, to_language=language_list[s_lang], _callback=_callback)
 
             if not video.visible:
                 video.visible = True
+                
+            video.next()
+            video.pause()
         else:
             page.open(not_url)
-        
-        video.next()
+
         url_field.value = ''
+        
+        page.update()
+    
+    def change_language(e):
+        program_language.label = translations[language_list[e.data]]['program_language label']
+        program_language.hint_text = translations[language_list[e.data]]['program_language hint_text']
+        select_language.label = translations[language_list[e.data]]['select_language label']
+        select_language.hint_text = translations[language_list[e.data]]['select_language hint_text']
+        url_field.label = translations[language_list[e.data]]['url_field label']
+        url_field.hint_text = translations[language_list[e.data]]['url_field hint_text']
+        submit_but.text = translations[language_list[e.data]]['submit_but']
+        not_url.title=ft.Text(translations[language_list[e.data]]['not_url'])
         
         page.update()
             
@@ -57,8 +71,35 @@ def main(page: ft.Page):
         "Yokai": "Yokai.otf"
     }
     
-    url_field = ft.TextField(label="YouTube URL", hint_text="Please enter URL here")
-    submit_but = ft.ElevatedButton("Submit", on_click=submit)
+    program_language = ft.Dropdown(
+            label=translations[start_language]['program_language hint_text'],
+            hint_text=translations[start_language]['program_language hint_text'],
+            options=[
+                ft.dropdown.Option("Ukraine"),
+                ft.dropdown.Option("English"),
+                ft.dropdown.Option("German"),
+                ft.dropdown.Option("French"),
+            ],
+            on_change=change_language,
+        )
+    program_language.value = "English"
+    
+    select_language = ft.Dropdown(
+            label=translations[start_language]['select_language hint_text'],
+            hint_text=translations[start_language]['select_language hint_text'],
+            options=[
+                ft.dropdown.Option("Ukraine"),
+                ft.dropdown.Option("English"),
+                ft.dropdown.Option("German"),
+                ft.dropdown.Option("French"),
+            ],
+        )
+    select_language.value = "Ukraine"
+    
+    url_field = ft.TextField(label=translations[start_language]['url_field label'],
+                hint_text=translations[start_language]['url_field hint_text'])
+    submit_but = ft.ElevatedButton(translations[start_language]['submit_but'],
+                                   on_click=submit)
     
     output_video = [
                     ft.VideoMedia(
@@ -81,27 +122,14 @@ def main(page: ft.Page):
             )
 
     not_url = ft.CupertinoAlertDialog(
-        title=ft.Text("URL is incorrect!"),
+        title=ft.Text(translations[start_language]['not_url']),
         actions=[
             ft.TextButton("OK", on_click=lambda e: page.close(not_url)),
         ],
     )
-    
-    select_language = ft.Dropdown(
-            label="language",
-            hint_text="Choose language to translate into",
-            options=[
-                ft.dropdown.Option("Ukrain"),
-                ft.dropdown.Option("English"),
-                ft.dropdown.Option("German"),
-                ft.dropdown.Option("French"),
-            ],
-            autofocus=True,
-        )
-    select_language.value = "Ukrain"
 
     progress_ring = ft.ProgressRing()
-    progress_label = ft.Text('Starting...')
+    progress_label = ft.Text()
     progress_dlg = ft.CupertinoAlertDialog(
         modal=True,
         content=ft.Container(
@@ -125,7 +153,10 @@ def main(page: ft.Page):
             [
                 ft.Column(
                     [
-                        ft.Text("Auto Transtate", font_family="Yokai", size=50),
+                        ft.Row([
+                            ft.Text("Auto Transtate", font_family="Yokai", size=50),
+                            program_language
+                        ]),
                         video,
                         ft.Row([url_field, select_language]),
                         submit_but
