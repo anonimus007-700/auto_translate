@@ -7,7 +7,7 @@ pip install -r requirements.txt
 ```
 
 ## This is what the program looks like at first launch
-![img](first_start.png)
+![img](firs_start.png)
 
 here we see such fields as "Choose program language" for setting interface languages. 'YouTube URL' for the video to be translated. 'Choose language to translate into' for which language to translate into
 
