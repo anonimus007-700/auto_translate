@@ -6,6 +6,8 @@ into another language, and audio generation for the translation.
 import os
 from typing import Literal
 
+from pathlib import Path
+
 import yt_dlp
 from moviepy.editor import VideoFileClip, AudioFileClip
 
@@ -110,7 +112,7 @@ class AutoTranslate:
         files_to_check = ['output_video.mp4', 'video.mp4', 'audio.wav']
 
         for file in files_to_check:
-            file_path = os.path.join(self.folder_path, file)
+            file_path = os.path.join(str(Path(__file__).parent), self.folder_path, file)
             if os.path.exists(file_path):
                 os.remove(file_path)
 
@@ -124,7 +126,7 @@ class AutoTranslate:
 
         ydl_opts = {
             'format': 'best',
-            'outtmpl': os.path.join(self.folder_path, 'video.%(ext)s')  # Save file as <title>.<ext>
+            'outtmpl': os.path.join(str(Path(__file__).parent), self.folder_path, 'video.%(ext)s')  # Save file as <title>.<ext>
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -138,12 +140,12 @@ class AutoTranslate:
         """
         description = 'Word recognition'
 
-        self.output_video_path = os.path.join(self.folder_path, 'video.mp4')
+        self.output_video_path = os.path.join(str(Path(__file__).parent), self.folder_path, 'video.mp4')
         self.video = VideoFileClip(str(self.output_video_path))
 
         audio = self.video.audio
 
-        self.output_audio_path = os.path.join(self.folder_path, 'audio.wav')
+        self.output_audio_path = os.path.join(str(Path(__file__).parent), self.folder_path, 'audio.wav')
         audio.write_audiofile(self.output_audio_path)
 
         self.__callback(description, True)
@@ -291,7 +293,7 @@ class AutoTranslate:
 
         audio = AudioFileClip(self.output_audio_path)
 
-        video_path = os.path.join(self.folder_path, 'output_video.mp4')
+        video_path = os.path.join(str(Path(__file__).parent), self.folder_path, 'output_video.mp4')
 
         video_with_audio = self.video.set_audio(audio)
         video_with_audio.write_videofile(video_path, codec='libx264', audio_codec='aac')

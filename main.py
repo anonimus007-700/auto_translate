@@ -7,9 +7,10 @@ from deep_translator import GoogleTranslator
 
 from auto_translate import AutoTranslate
 from change_language import language_list, translations
+import set_config
 
 
-start_language = 'en'
+start_language = set_config.set_up()
 
 
 def main(page: ft.Page):
@@ -57,9 +58,11 @@ def main(page: ft.Page):
         submit_but.text = translations[language_list[e.data]]['submit_but']
         not_url.title=ft.Text(translations[language_list[e.data]]['not_url'])
         
-        page.update()
-            
+        set_config.update(language_list[e.data])
         
+        page.update()
+
+
     page.theme_mode = ft.ThemeMode.DARK
     page.title = "Auto Transtate"
     page.window.icon = os.path.abspath(os.path.join('assets', 'favicon.ico'))
@@ -82,7 +85,7 @@ def main(page: ft.Page):
             ],
             on_change=change_language,
         )
-    program_language.value = "English"
+    program_language.value = next((k for k, v in language_list.items() if v == start_language), None)
     
     select_language = ft.Dropdown(
             label=translations[start_language]['select_language hint_text'],
