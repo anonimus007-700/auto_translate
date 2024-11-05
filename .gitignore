@@ -4,5 +4,6 @@
 /model-en-us
 /__pycache__
 /.ruff_cache
+/assets/conf.ini
 *.wav
 *.mp4

@@ -40,7 +40,7 @@ jobs:
           pip install -r requirements.txt
 
       # Build python script into a stand-alone exe
-      - uses: anonimus007-700/auto_translate@main
+      - uses: anonimus007-700/auto_translate@v 1.2
         with:
           script-name: main.py
           onefile: true
