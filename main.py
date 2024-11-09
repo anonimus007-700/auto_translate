@@ -7,6 +7,7 @@ from deep_translator import GoogleTranslator
 
 from auto_translate import AutoTranslate
 from change_language import language_list, translations
+from check_resource_path import resource_path
 import set_config
 
 
@@ -65,13 +66,13 @@ def main(page: ft.Page):
 
     page.theme_mode = ft.ThemeMode.DARK
     page.title = "Auto Transtate"
-    page.window.icon = os.path.abspath(os.path.join('assets', 'favicon.ico'))
+    page.window.icon = resource_path(os.path.join('assets', 'favicon.ico'))
     page.spacing = 20
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
     page.theme = ft.Theme(color_scheme_seed='indigo')
 
     page.fonts = {
-        "Yokai": "Yokai.otf"
+        "Yokai": resource_path(os.path.join('assets', 'Yokai.otf'))
     }
     
     program_language = ft.Dropdown(
@@ -106,10 +107,10 @@ def main(page: ft.Page):
     
     output_video = [
                     ft.VideoMedia(
-                        "assets/output_video.mp4"
+                        resource_path(os.path.join('assets', 'output_video.mp4'))
                     ),
                     ft.VideoMedia(
-                        "assets/output_video.mp4"
+                        resource_path(os.path.join('assets', 'output_video.mp4'))
                     ),
                 ]
     video = ft.Video(
@@ -174,4 +175,4 @@ def main(page: ft.Page):
         )
     )
 
-ft.app(main, assets_dir="assets")
+ft.app(main)

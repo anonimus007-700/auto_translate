@@ -271,8 +271,6 @@ class AutoTranslate:
         
         df = df[df['audio'].apply(lambda x: len(x) > 0)]
 
-        print(df)
-
         total_duration = df['end_time'].max()
         total_samples = int(total_duration * self.sample_rate)
 
