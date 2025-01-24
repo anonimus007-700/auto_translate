@@ -65,7 +65,7 @@ def main(page: ft.Page):
 
 
     page.theme_mode = ft.ThemeMode.DARK
-    page.title = "Auto Transtate"
+    page.title = "Auto Translate"
     page.window.icon = resource_path(os.path.join('assets', 'favicon.ico'))
     page.spacing = 20
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
@@ -122,7 +122,7 @@ def main(page: ft.Page):
                 autoplay=False,
                 filter_quality=ft.FilterQuality.HIGH,
                 muted=False,
-                visible=True if os.path.exists(os.path.join('assets', 'output_video.mp4')) else False,
+                visible=True if os.path.exists(resource_path(os.path.join('assets', 'output_video.mp4'))) else False,
             )
 
     not_url = ft.CupertinoAlertDialog(
@@ -158,7 +158,7 @@ def main(page: ft.Page):
                 ft.Column(
                     [
                         ft.Row([
-                            ft.Text("Auto Transtate", font_family="Yokai", size=50),
+                            ft.Text("Auto Translate", font_family="Yokai", size=50),
                             program_language
                         ]),
                         video,

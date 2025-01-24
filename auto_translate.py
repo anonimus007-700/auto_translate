@@ -5,6 +5,7 @@ into another language, and audio generation for the translation.
 
 import os
 from typing import Literal
+from check_resource_path import resource_path
 
 from pathlib import Path
 
@@ -36,7 +37,7 @@ class AutoTranslate:
         self.to_language = to_language
         self._callback = _callback
 
-        self.folder_path = 'assets'
+        self.folder_path = resource_path(os.path.join('assets'))
         self.progress = 0
         self.line_width = 7
         self.prev_end_time = None
@@ -282,7 +283,7 @@ class AutoTranslate:
             end_sample = start_sample + len(audio_data)
 
             if end_sample > total_samples:
-                print(f'Warning: audio segment exceeds total duration at {row['start_time']}s.')
+                print(f"Warning: audio segment exceeds total duration at {row['start_time']}s.")
                 end_sample = total_samples
 
             combined_audio[start_sample:end_sample] = audio_data[:end_sample - start_sample]
