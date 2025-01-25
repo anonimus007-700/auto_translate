@@ -10,7 +10,7 @@ from check_resource_path import resource_path
 from pathlib import Path
 
 import yt_dlp
-from moviepy.editor import VideoFileClip, AudioFileClip
+from moviepy import VideoFileClip, AudioFileClip
 
 import torch
 import pandas as pd

@@ -8,3 +8,5 @@ deep_translator
 PySoundFile
 validators
 pathlib
+flet
+
