@@ -294,7 +294,7 @@ class AutoTranslate:
 
         video_path = os.path.join(str(Path(__file__).parent), self.folder_path, 'output_video.mp4')
 
-        video_with_audio = self.video.set_audio(audio)
+        video_with_audio = self.video.with_audio(audio)
         video_with_audio.write_videofile(video_path, codec='libx264', audio_codec='aac')
 
         self.__callback(description, True)
